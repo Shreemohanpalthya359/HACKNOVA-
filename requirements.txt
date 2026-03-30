@@ -4,5 +4,9 @@
 # Data manipulation and CSV processing
 pandas>=1.5.0
 
+# Backend API
+Flask>=3.0.0
+Flask-Cors>=4.0.0
+
 # Note: sqlite3 and os are part of Python's standard library
 # and do not need to be installed separately.

@@ -2,13 +2,21 @@ from flask import Blueprint, jsonify
 import sqlite3
 import pandas as pd
 
+# Import analytics functions ✅
+from services.analytics import (
+    get_total_revenue,
+    get_monthly_sales,
+    get_top_products,
+    get_top_customers
+)
+
 api_bp = Blueprint('api', __name__)
 
 DATABASE = "database.db"
 
 
 # -----------------------------
-# Database Connection
+# Database Connection (ONLY for /sales)
 # -----------------------------
 def get_db_connection():
     conn = sqlite3.connect(DATABASE)
@@ -17,7 +25,7 @@ def get_db_connection():
 
 
 # -----------------------------
-# Optional Home Route (helps testing)
+# Home Route
 # -----------------------------
 @api_bp.route('/', methods=['GET'])
 def home():
@@ -25,7 +33,7 @@ def home():
 
 
 # -----------------------------
-# GET /sales
+# GET /sales (raw data)
 # -----------------------------
 @api_bp.route('/sales', methods=['GET'])
 def get_sales():
@@ -39,20 +47,23 @@ def get_sales():
 
 
 # -----------------------------
-# GET /revenue
+# GET /revenue (from analytics)
 # -----------------------------
 @api_bp.route('/revenue', methods=['GET'])
-def get_revenue():
+def revenue():
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT SUM(price * quantity) AS total_revenue FROM sales")
-        result = cursor.fetchone()
-        conn.close()
+        return jsonify(get_total_revenue())
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-        return jsonify({
-            "total_revenue": result["total_revenue"] if result["total_revenue"] else 0
-        })
+
+# -----------------------------
+# GET /monthly-sales
+# -----------------------------
+@api_bp.route('/monthly-sales', methods=['GET'])
+def monthly_sales():
+    try:
+        return jsonify(get_monthly_sales())
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -61,33 +72,19 @@ def get_revenue():
 # GET /top-products
 # -----------------------------
 @api_bp.route('/top-products', methods=['GET'])
-def get_top_products():
+def top_products():
     try:
-        conn = get_db_connection()
-        query = """
-        SELECT product, SUM(quantity) AS total_sold
-        FROM sales
-        GROUP BY product
-        ORDER BY total_sold DESC
-        LIMIT 5
-        """
-        df = pd.read_sql_query(query, conn)
-        conn.close()
-        return jsonify(df.to_dict(orient='records'))
+        return jsonify(get_top_products())
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
 # -----------------------------
-# GET /customers
+# GET /top-customers
 # -----------------------------
-@api_bp.route('/customers', methods=['GET'])
-def get_customers():
+@api_bp.route('/top-customers', methods=['GET'])
+def top_customers():
     try:
-        conn = get_db_connection()
-        query = "SELECT DISTINCT customer_name FROM sales"
-        df = pd.read_sql_query(query, conn)
-        conn.close()
-        return jsonify(df.to_dict(orient='records'))
+        return jsonify(get_top_customers())
     except Exception as e:
         return jsonify({"error": str(e)}), 500
